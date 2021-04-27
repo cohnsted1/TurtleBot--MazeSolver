@@ -113,14 +113,14 @@ void laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
             left_side += laser_ranges[i];
         }
 
-        if (i < range_size*0.75 + 45 && i > range_size*0.75) {
+        if (i < range_size*0.75 + 60 && i > range_size*0.75) {
           if (laser_ranges[i] > 4) {
               fright_side += 4;
           } else {
               fright_side += laser_ranges[i]; //sums front right section
           }
 
-        } else if (i > range_size*0.75 - 45 && i < range_size*0.75) {
+        } else if (i > range_size*0.75 - 60 && i < range_size*0.75) {
           if (laser_ranges[i] > 4) {
               bright_side += 4;
           } else {
@@ -130,7 +130,7 @@ void laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
     }
 
     // Check if the robot has crashed into a wall
-    if (nan_count > (range_size * 0.9) || laser_ranges[0] < 0.15) {
+    if (laser_ranges[0] < 0.15) {
         crashed = true;
     }
     else {
@@ -153,7 +153,7 @@ void laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
             }
         }
         else {
-          if (abs(fright_side - bright_side) > 7) {
+          if (abs(fright_side - bright_side) > 10) {
               ROS_INFO("[ROBOT] Not Parallel \n");
               ROS_INFO("Front Right: %f", fright_side);
               ROS_INFO("Back Right: %f", bright_side);
@@ -164,12 +164,12 @@ void laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
               } else {
                   robot_move(GO_LEFT);
               }
-          } else if (laser_ranges[range_size*0.85] > 0.60) {
+          } else if (laser_ranges[range_size*0.75] > 0.55) {
               ROS_INFO("[ROBOT] Too far from wall \n");
 
               robot_move(GO_RIGHT);
 
-          } else if (laser_ranges[range_size*0.85] < 0.40) {
+          } else if (laser_ranges[range_size*0.85] < 0.35) {
               ROS_INFO("[ROBOT] Too close to wall \n");
 
               robot_move(GO_LEFT);
