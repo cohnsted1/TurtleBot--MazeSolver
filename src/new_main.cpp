@@ -36,61 +36,57 @@ typedef enum _ROBOT_MOVEMENT {
 bool robot_move(const ROBOT_MOVEMENT move_type)
 {
     if (move_type == STOP) {
-        ROS_INFO("[ROBOT] HALT! \n");
+        ROS_INFO("HALT! \n");
 
         motor_command.angular.z = 0.0;
         motor_command.linear.x = 0.0;
     }
 
     else if (move_type == FORWARD) {
-        ROS_INFO("[ROBOT] Always FORWARD! \n");
+        ROS_INFO("Always FORWARD! \n");
         motor_command.angular.z = 0.0;
         motor_command.linear.x = 0.17;
     }
 
     else if (move_type == BACKWARD) {
-        ROS_INFO("[ROBOT] I'm going back! \n");
+        ROS_INFO("I'm going back! \n");
         motor_command.linear.x = -0.15;
         motor_command.angular.z = 0.75;
     }
 
     else if (move_type == TURN_LEFT) {
-        ROS_INFO("[ROBOT] I'm turning left! \n");
+        ROS_INFO("I'm turning left! \n");
         motor_command.linear.x = 0.05;
         motor_command.angular.z = 0.5;
     }
 
     else if (move_type == TURN_RIGHT) {
-        ROS_INFO("[ROBOT] I'm turning right! \n");
+        ROS_INFO("I'm turning right! \n");
         motor_command.linear.x = 0.05;
         motor_command.angular.z = -0.5;
     }
     else if (move_type == GO_RIGHT) {
-        ROS_INFO("[ROBOT] I'm goin right! \n");
+        ROS_INFO("I'm goin right! \n");
         motor_command.linear.x = 0.15;
         motor_command.angular.z = -0.5;
     }
     else if (move_type == GO_LEFT) {
-        ROS_INFO("[ROBOT] I'm goin left! \n");
+        ROS_INFO("I'm goin left! \n");
         motor_command.linear.x = 0.15;
         motor_command.angular.z = 0.5;
     }
     else {
-        ROS_INFO("[ROBOT_MOVE] Move type wrong! \n");
+        ROS_INFO("Move type wrong! \n");
         return false;
     }
 
-    //Publish motor commands to the robot and wait 10ms
     motor_command_publisher.publish(motor_command);
     usleep(10);
     return true;
 }
 
-bool following_wall = false;
-bool thats_a_door = false;
 bool crashed = false;
 
-// The laser_callback function will be called each time a laser scan data is received
 void laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 {
     // Read and process laser scan values
@@ -102,6 +98,7 @@ void laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
           fright_side = 0.0, bright_side = 0.0,
           front_side = 0.0;
     float range_min = laser_msg.range_max;
+
     for (size_t i = 0; i < range_size; i++) {
         if (laser_ranges[i] < range_min) {
             range_min = laser_ranges[i];
@@ -118,7 +115,7 @@ void laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
           if (laser_ranges[i] > 4) {
               front_side += 4;
           } else {
-              front_side += laser_ranges[i]; //sums front right section
+              front_side += laser_ranges[i]; //sums front section
           }
         }
 
@@ -146,13 +143,10 @@ void laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
         crashed = false;
     }
 
-    ROS_INFO("[ROBOT] Front side sum: [%f] \n", front_side);
-
     // Assign movements to a robot that still did not crash
     if (!crashed) {
 
         if (range_min <= 0.20) {
-            following_wall = true;
             crashed = false;
             robot_move(STOP);
 
@@ -167,10 +161,9 @@ void laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
 
           if (front_side < 30) {
               robot_move(TURN_LEFT);
+              ROS_INFO("Dead end \n");
           } else if (abs(fright_side - bright_side) > 12) {
-              ROS_INFO("[ROBOT] Not Parallel \n");
-              ROS_INFO("Front Right: %f", fright_side);
-              ROS_INFO("Back Right: %f", bright_side);
+              ROS_INFO("Not Parallel \n");
 
               if (fright_side > bright_side) {
 
@@ -179,12 +172,12 @@ void laser_callback(const sensor_msgs::LaserScan::ConstPtr& scan_msg)
                   robot_move(GO_LEFT);
               }
           } else if (laser_ranges[range_size*0.75] > 0.75) {
-              ROS_INFO("[ROBOT] Too far from wall \n");
+              ROS_INFO("Too far from wall \n");
 
               robot_move(GO_RIGHT);
 
           } else if (laser_ranges[range_size*0.75] < 0.55) {
-              ROS_INFO("[ROBOT] Too close to wall \n");
+              ROS_INFO("Too close to wall \n");
 
               robot_move(GO_LEFT);
           } else {
@@ -202,18 +195,11 @@ int main(int argc, char** argv)
 {
     // Initialize a ROS node
     ros::init(argc, argv, "node");
-
-    // Create a ROS NodeHandle object
     ros::NodeHandle n;
-
-    // Inform ROS master that we will be publishing a message of type geometry_msgs::Twist on the robot actuation topic with a publishing queue size of 100
     motor_command_publisher = n.advertise<geometry_msgs::Twist>("/cmd_vel", 100);
-
-    // Subscribe to the /scan topic and call the laser_callback function
     laser_subscriber = n.subscribe("/scan", 1000, laser_callback);
-
-    // Enter an infinite loop where the laser_callback function will be called when new laser messages arrive
     ros::Duration time_between_ros_wakeups(0.001);
+
     while (ros::ok()) {
         ros::spinOnce();
         time_between_ros_wakeups.sleep();
