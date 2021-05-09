@@ -19,7 +19,7 @@
 
     <!-- Custom maze -->
     <include>
-      <uri>model://Custom_Maze1</uri>
+      <uri>model://Custom1</uri>
     </include>
 
     <physics type="ode">

@@ -18,7 +18,7 @@
     </include>
     <!-- Custom Maze 2 -->
     <include>
-      <uri>model://Custom_Maze2</uri>
+      <uri>model://Custom2</uri>
     </include>
 
     <physics type="ode">
